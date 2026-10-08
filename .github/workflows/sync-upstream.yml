@@ -1,0 +1,32 @@
+# 每天自动把 fork 同步到上游默认分支
+# 用法: 把此文件放进每个 fork 的 .github/workflows/sync-upstream.yml (默认分支)
+# 推送只需要一次, 之后每天靠仓库自带的 GITHUB_TOKEN 自动跑, 不再需要 PAT
+name: 每日同步上游
+
+on:
+  schedule:
+    # 每天 03:00 北京时间 (GitHub Actions 的 cron 按 UTC 写)
+    - cron: '0 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 合并上游默认分支
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH=$(gh api "repos/${{ github.repository }}" --jq .default_branch)
+          set +e
+          OUT=$(gh api -X POST "repos/${{ github.repository }}/merge-upstream" -f branch="$BRANCH" 2>&1)
+          CODE=$?
+          set -e
+          echo "$OUT"
+          # 已是最新时 GitHub 可能返回非 0, 视为成功; 真正的冲突/失败才报错
+          if [ $CODE -ne 0 ] && ! echo "$OUT" | grep -qiE "already up to date|nothing to merge"; then
+            exit $CODE
+          fi
