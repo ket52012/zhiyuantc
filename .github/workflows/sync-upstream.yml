@@ -1,12 +1,12 @@
-# 每天自动把 fork 同步到上游默认分支
+# 每周自动把 fork 同步到上游默认分支
 # 用法: 把此文件放进每个 fork 的 .github/workflows/sync-upstream.yml (默认分支)
-# 推送只需要一次, 之后每天靠仓库自带的 GITHUB_TOKEN 自动跑, 不再需要 PAT
-name: 每日同步上游
+# 推送只需要一次, 之后每周靠仓库自带的 GITHUB_TOKEN 自动跑, 不再需要 PAT
+name: 每周同步上游
 
 on:
   schedule:
-    # 每天 03:00 北京时间 (GitHub Actions 的 cron 按 UTC 写)
-    - cron: '0 19 * * *'
+    # 每周一 03:00 北京时间 (GitHub Actions 的 cron 按 UTC 写, 19:00 UTC 周日 = 03:00 周一北京时间)
+    - cron: '0 19 * * 0'
   workflow_dispatch:
 
 permissions:
