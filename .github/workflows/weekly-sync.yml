@@ -1,0 +1,31 @@
+# 每周自动把 fork 同步到上游默认分支
+# 推送后, 上游自带的 "Deploy to Cloudflare Workers" 会在 push 到 main 时自动部署
+name: 每周同步上游
+
+on:
+  schedule:
+    # 每周一 03:00 北京时间 (19:00 UTC 周日 = 03:00 周一北京时间)
+    - cron: '0 19 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 合并上游默认分支
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH=$(gh api "repos/${{ github.repository }}" --jq .default_branch)
+          set +e
+          OUT=$(gh api -X POST "repos/${{ github.repository }}/merge-upstream" -f branch="$BRANCH" 2>&1)
+          CODE=$?
+          set -e
+          echo "$OUT"
+          # 已是最新时 GitHub 可能返回非 0, 视为成功; 真正的冲突/失败才报错
+          if [ $CODE -ne 0 ] && ! echo "$OUT" | grep -qiE "already up to date|nothing to merge"; then
+            exit $CODE
+          fi
